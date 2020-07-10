@@ -1,0 +1,56 @@
+import org.gradle.internal.jvm.Jvm
+
+plugins {
+    id 'java'
+    id 'cpp'
+}
+
+repositories {
+    mavenCentral()
+}
+
+group 'rocks.inspectit'
+version '1.0'
+
+sourceCompatibility = 1.8
+
+dependencies {
+    testRuntime "org.junit.jupiter:junit-jupiter-engine:5.4.2"
+    testCompile 'org.junit.jupiter:junit-jupiter:5.4.2'
+}
+
+
+test {
+    useJUnitPlatform()
+    testLogging.showStandardStreams = true
+    systemProperty "java.library.path", file("${buildDir}/libs/inspectit_bst/shared").absolutePath
+}
+
+model {
+    platforms {
+        linux_x64 {
+            architecture "x64"
+            operatingSystem "linux"
+        }
+    }
+    components {
+        inspectit_bst(NativeLibrarySpec) {
+            targetPlatform 'linux_x64'
+            sources {
+                cpp {
+                    source {
+                        srcDir 'src/main/jni'
+                        include "**/*.cpp"
+                    }
+                }
+            }
+            binaries.all {
+                cppCompiler.args '-I', "${Jvm.current().javaHome}/include"
+                cppCompiler.args '-I', "${Jvm.current().javaHome}/include/linux"
+                cppCompiler.args '-D_FILE_OFFSET_BITS=64'
+            }
+        }
+    }
+}
+
+test.dependsOn 'inspectit_bstSharedLibrary'
